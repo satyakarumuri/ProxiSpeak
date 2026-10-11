@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ProxiSpeak — Spatial Proximity Audio Demo</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="logo">
+        <span class="icon">🎧</span>
+        <h1>ProxiSpeak</h1>
+        <span class="badge">Spatial Audio Playground</span>
+      </div>
+      <div class="header-controls">
+        <button id="btnAudioToggle" class="btn btn-primary">
+          <span class="btn-icon">▶</span> <span id="audioToggleText">Start Audio Simulation</span>
+        </button>
+        <button id="btnMicTest" class="btn btn-secondary">
+          <span class="btn-icon">🎙</span> Test Microphone
+        </button>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <div class="canvas-wrapper">
+        <div class="canvas-header-info">
+          <span>💡 <b>Controls:</b> Drag avatars with mouse or use <b>W, A, S, D / Arrow Keys</b> to move your avatar. Put on headphones for 3D spatial effect!</span>
+        </div>
+        <canvas id="officeCanvas" width="800" height="520"></canvas>
+      </div>
+
+      <aside class="sidebar">
+        <!-- Audio Status & Stats -->
+        <div class="card">
+          <h2>Spatial Proximity Stats</h2>
+          <div class="stat-row">
+            <span class="stat-label">Listener Position:</span>
+            <span id="statListenerPos" class="stat-value">x: 400, y: 260</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Distance to Speaker:</span>
+            <span id="statDistance" class="stat-value">0 px</span>
+          </div>
+
+          <div class="meter-group">
+            <div class="meter-label">
+              <span>Volume (Gain):</span>
+              <span id="statGainPct">0%</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div id="statGainBar" class="progress-bar-fill" style="width: 0%;"></div>
+            </div>
+          </div>
+
+          <div class="meter-group">
+            <div class="meter-label">
+              <span>Stereo Pan (L / R):</span>
+              <span id="statPanVal">0.00 (Center)</span>
+            </div>
+            <div class="pan-bar-container">
+              <div class="pan-center-mark"></div>
+              <div id="statPanIndicator" class="pan-indicator" style="left: 50%;"></div>
+            </div>
+            <div class="pan-labels">
+              <span>Left (L)</span>
+              <span>Center</span>
+              <span>Right (R)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Microphone / Speaking activity -->
+        <div class="card" id="micCard">
+          <h2>Microphone Speaking Indicator</h2>
+          <div class="stat-row">
+            <span class="stat-label">Mic Status:</span>
+            <span id="micStatus" class="badge-status">Inactive</span>
+          </div>
+          <div class="meter-group">
+            <div class="meter-label">
+              <span>Speaking Level:</span>
+              <span id="statMicLevel">0%</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div id="statMicBar" class="progress-bar-fill mic-fill" style="width: 0%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Custom Audio Range Controls -->
+        <div class="card">
+          <h2>Proximity Range Settings</h2>
+          <div class="slider-group">
+            <div class="slider-label">
+              <span>Min Distance (100% Volume):</span>
+              <span id="valMinDist">60 px</span>
+            </div>
+            <input type="range" id="sliderMinDist" min="20" max="150" value="60">
+          </div>
+          <div class="slider-group">
+            <div class="slider-label">
+              <span>Max Distance (Cutoff 0%):</span>
+              <span id="valMaxDist">320 px</span>
+            </div>
+            <input type="range" id="sliderMaxDist" min="150" max="500" value="320">
+          </div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
