@@ -23,11 +23,20 @@ const MIME_TYPES = {
 const server = http.createServer((req, res) => {
   // Normalize request url
   let reqPath = req.url.split('?')[0];
-  if (reqPath === '/' || reqPath === '/demo') {
+  if (reqPath === '/' || reqPath === '/demo' || reqPath === '/demo/') {
     reqPath = '/demo/index.html';
   }
 
-  const filePath = path.join(ROOT_DIR, reqPath);
+  // 1. Check direct path from ROOT_DIR
+  let filePath = path.join(ROOT_DIR, reqPath);
+
+  // 2. Fallback: Check inside ROOT_DIR/demo/ if not found in root
+  if (!fs.existsSync(filePath)) {
+    const demoFilePath = path.join(ROOT_DIR, 'demo', reqPath);
+    if (fs.existsSync(demoFilePath)) {
+      filePath = demoFilePath;
+    }
+  }
 
   // Security check: ensure path stays within ROOT_DIR
   if (!filePath.startsWith(ROOT_DIR)) {
@@ -39,7 +48,7 @@ const server = http.createServer((req, res) => {
   fs.stat(filePath, (err, stats) => {
     if (err || !stats.isFile()) {
       res.writeHead(404, { 'Content-Type': 'text/plain' });
-      res.end('404 Not Found');
+      res.end(`404 Not Found: ${reqPath}`);
       return;
     }
 
