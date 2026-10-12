@@ -4,7 +4,9 @@
   "description": "Geospatial Proximity Audio Ecosystem",
   "main": "src/audio/index.js",
   "scripts": {
-    "start": "node demo/server.js",
+    "start": "npm --prefix frontend run dev",
+    "dev": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
     "demo": "node demo/server.js"
   },
   "keywords": [
