@@ -1,6 +1,7 @@
 
 import React, { useState } from "react";
 import { registerUser, loginUser } from "../services/authService";
+import OfficeScene from "../components/OfficeScene";
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -38,26 +39,31 @@ export default function AuthPage() {
   }
 
   if (user) {
-    return (
-      <main className="auth-page">
-        <section className="auth-card">
-          <h1>Welcome, {user.name}!</h1>
-          <p>You are logged in to ProxiSpeak.</p>
-          <p>{user.email}</p>
-          <button
-            onClick={() => {
-              localStorage.removeItem("proxispeak_token");
-              setUser(null);
-              setPassword("");
-              setMessage("");
-            }}
-          >
-            Log out
-          </button>
-        </section>
-      </main>
-    );
-  }
+  return (
+    <main className="office-page">
+      <header className="office-header">
+        <div>
+          <h1>ProxiSpeak</h1>
+          <p>Virtual Office · Welcome, {user.name}</p>
+        </div>
+
+        <button
+          className="logout-button"
+          onClick={() => {
+            localStorage.removeItem("proxispeak_token");
+            setUser(null);
+            setPassword("");
+            setMessage("");
+          }}
+        >
+          Log out
+        </button>
+      </header>
+
+      <OfficeScene name={user.name} />
+    </main>
+  );
+}
 
   return (
     <main className="auth-page">
