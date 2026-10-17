@@ -55,9 +55,42 @@ function Desk({ position }) {
   );
 }
 
-function AvatarModel({ name, position, color = "#38bdf8" }) {
+function AvatarModel({
+  name,
+  position,
+  color = "#38bdf8",
+  smooth = false
+}) {
+  const groupRef = useRef();
+  const targetPosition = useRef(new THREE.Vector3(...position));
+
+  useEffect(() => {
+    targetPosition.current.set(
+      position[0],
+      position[1],
+      position[2]
+    );
+  }, [position]);
+
+  useFrame((_, delta) => {
+    if (!groupRef.current) return;
+
+    if (smooth) {
+      groupRef.current.position.lerp(
+        targetPosition.current,
+        1 - Math.exp(-10 * Math.min(delta, 0.1))
+      );
+    } else {
+      groupRef.current.position.set(
+        position[0],
+        position[1],
+        position[2]
+      );
+    }
+  });
+
   return (
-    <group position={position}>
+    <group ref={groupRef} position={position}>
       <mesh position={[0, 1, 0]} castShadow>
         <capsuleGeometry args={[0.35, 0.65, 4, 8]} />
         <meshStandardMaterial color={color} />
@@ -113,7 +146,8 @@ function LocalAvatar({ name, socket, connected }) {
   }, []);
 
   useFrame((_, delta) => {
-    if (!avatarRef.current) return;
+    const avatar = avatarRef.current;
+    if (!avatar) return;
 
     const movement = new THREE.Vector3();
     const pressed = keys.current;
@@ -126,29 +160,30 @@ function LocalAvatar({ name, socket, connected }) {
     if (movement.lengthSq() === 0) return;
 
     movement.normalize();
-    avatarRef.current.position.addScaledVector(
+    avatar.position.addScaledVector(
       movement,
       4 * Math.min(delta, 0.05)
     );
 
-    avatarRef.current.position.x = THREE.MathUtils.clamp(
-      avatarRef.current.position.x, -9, 9
+    avatar.position.x = THREE.MathUtils.clamp(
+      avatar.position.x, -9, 9
     );
-    avatarRef.current.position.z = THREE.MathUtils.clamp(
-      avatarRef.current.position.z, -7, 7
+    avatar.position.z = THREE.MathUtils.clamp(
+      avatar.position.z, -7, 7
     );
 
-    // Send movement at most 15 times per second.
     const now = performance.now();
 
     if (connected && socket?.connected && now - lastSent.current >= 66) {
       lastSent.current = now;
 
-      const { x, y, z } = avatarRef.current.position;
-
       socket.emit("avatar:move", {
         roomId: ROOM_ID,
-        position: { x, y: 0, z },
+        position: {
+          x: avatar.position.x,
+          y: 0,
+          z: avatar.position.z
+        },
         rotation: 0
       });
     }
@@ -156,26 +191,20 @@ function LocalAvatar({ name, socket, connected }) {
 
   return (
     <group ref={avatarRef} position={[0, 0, 2]}>
-      <AvatarModel name={name || "You"} position={[0, 0, 0]} />
+      <AvatarModel
+        name={name || "You"}
+        position={[0, 0, 0]}
+      />
     </group>
   );
 }
 
-function OfficeEnvironment({
-  name,
-  socket,
-  connected,
-  remoteUsers
-}) {
+function OfficeEnvironment({ name, socket, connected, remoteUsers }) {
   return (
     <>
       <color attach="background" args={["#dbeafe"]} />
       <ambientLight intensity={1.6} />
-      <directionalLight
-        position={[5, 10, 5]}
-        intensity={2}
-        castShadow
-      />
+      <directionalLight position={[5, 10, 5]} intensity={2} castShadow />
 
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
@@ -223,6 +252,7 @@ function OfficeEnvironment({
             user.position?.z ?? -1
           ]}
           color="#a78bfa"
+          smooth
         />
       ))}
     </>
@@ -258,10 +288,7 @@ export default function OfficeScene({ name = "You" }) {
 
       client.emit(
         "office:join",
-        {
-          roomId: ROOM_ID,
-          user: { name }
-        },
+        { roomId: ROOM_ID, user: { name } },
         (result) => {
           if (!result?.ok) {
             setConnectionMessage(
@@ -275,6 +302,7 @@ export default function OfficeScene({ name = "You" }) {
               (user) => user.id !== client.id
             )
           );
+
           setConnectionMessage("Connected to virtual office");
         }
       );
@@ -334,10 +362,7 @@ export default function OfficeScene({ name = "You" }) {
 
   return (
     <div className="office-canvas">
-      <Canvas
-        shadows
-        camera={{ position: [11, 12, 16], fov: 45 }}
-      >
+      <Canvas shadows camera={{ position: [11, 12, 16], fov: 45 }}>
         <OfficeEnvironment
           name={name}
           socket={socket}
