@@ -1,126 +1,76 @@
 
-# ProxiSpeak API Contract
+## 8. Virtual Office Socket.IO Contract
 
-## 1. Project Overview
+Connection:
+- Backend: http://localhost:3000
+- Transport: Socket.IO
 
-Project: ProxiSpeak - Geospatial Proximity Audio Ecosystem
+### Join an office
 
-Frontend: React + Vite
-Backend: Node.js + Express
-Database: MongoDB Atlas
-Real-time communication: Socket.IO
-Voice communication: WebRTC
+Client emits: office:join
 
-## 2. Backend Base URL
-
-Local development:
-http://localhost:3000
-
-## 3. Authentication APIs
-
-### Register
-
-Endpoint: POST /api/auth/register
-
-Request body:
+Payload:
 {
-  "name": "Test User",
-  "email": "user@example.com",
-  "password": "ExamplePass123!"
-}
-
-Success: HTTP 201
-
-Response:
-{
-  "message": "Registration successful",
+  "roomId": "office-1",
   "user": {
     "id": "user_id",
-    "name": "Test User",
-    "email": "user@example.com"
+    "name": "Test User"
   }
 }
 
-### Login
+Server emits: office:users
 
-Endpoint: POST /api/auth/login
+Payload: Array of users currently in the office.
 
-Request body:
+### Avatar movement
+
+Client emits: avatar:move
+
+Payload:
 {
-  "email": "user@example.com",
-  "password": "ExamplePass123!"
+  "roomId": "office-1",
+  "position": {
+    "x": 1,
+    "y": 0,
+    "z": 2
+  },
+  "rotation": 0
 }
 
-Success: HTTP 200
+Server emits: avatar:moved
 
-Response:
+Payload:
 {
-  "message": "Login successful",
-  "token": "authentication_token",
-  "user": {
-    "id": "user_id",
-    "name": "Test User",
-    "email": "user@example.com"
-  }
+  "userId": "user_id",
+  "position": {
+    "x": 1,
+    "y": 0,
+    "z": 2
+  },
+  "rotation": 0
 }
 
-Never commit real passwords, JWT secrets or database credentials.
+The server must validate room membership and position values
+before broadcasting movement to other users in the same room.
 
-## 4. Health Check
+### Leaving the office
 
-Endpoint: GET /api/health
+Client emits: office:leave
 
-Success: HTTP 200
+Server emits: office:user-left
 
-Response:
+Payload:
 {
-  "status": "ok",
-  "project": "ProxiSpeak",
-  "message": "Backend is running",
-  "database": "connected"
+  "userId": "user_id"
 }
 
-## 5. Team Module Ownership
+### Rules
 
-Member 2:
-Login and registration frontend UI and validation.
-
-Member 3:
-Backend authentication routes and authentication security.
-Coordinate with the team lead before changing existing auth routes.
-
-Member 4:
-MongoDB user schema, database operations and profile functions.
-Coordinate schema changes with the team lead.
-
-Member 5:
-Virtual office UI, desks, avatars, status indicators and placeholder controls.
-
-Team Lead:
-Project integration, API contracts, real-time movement,
-proximity voice integration, testing, documentation and demo.
-
-## 6. Integration Rules
-
-1. Each member works on their assigned Git branch.
-2. Do not merge any branch into main before the end review.
-3. Keep the existing folder structure unless changes are agreed upon.
-4. Test changes before requesting integration.
-5. Do not commit .env, node_modules or build output.
-6. Coordinate before modifying shared files.
-7. Report changed files, tests and known issues when submitting work.
-
-## 7. Planned Real-Time Features
-
-Socket.IO:
-- Join and leave office rooms.
-- Synchronize avatar positions.
-- Track online users and movement.
+- Broadcast movement to other users in the same room.
+- Do not trust user IDs supplied by the client without verification.
+- Do not allow arbitrary room access without validation.
 - Handle disconnects and reconnects.
+- Movement events must not be broadcast to unrelated rooms.
 
-WebRTC:
-- Establish voice connections between nearby users.
-- Use distance-based audio attenuation.
-- Support microphone mute and unmute.
-
-These real-time features are planned and are not yet implemented.
+These events are planned contracts and must be implemented
+and tested before they are considered complete.
