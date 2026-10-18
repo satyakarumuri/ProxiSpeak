@@ -111,9 +111,19 @@ export class SpatialAudioEngine {
     const peer = this.peerNodes.get(peerId);
     if (!peer || !this.audioCtx) return null;
 
-    const dx = peerPos.x - listenerPos.x;
-    const dy = peerPos.y - listenerPos.y;
-    const distance = Math.hypot(dx, dy);
+    // Support both objects ({ x, y, z }) and arrays ([x, y, z])
+    const lx = Array.isArray(listenerPos) ? listenerPos[0] : (listenerPos?.x ?? 0);
+    const ly = Array.isArray(listenerPos) ? listenerPos[1] : (listenerPos?.y ?? 0);
+    const lz = Array.isArray(listenerPos) ? listenerPos[2] : (listenerPos?.z ?? 0);
+
+    const px = Array.isArray(peerPos) ? peerPos[0] : (peerPos?.x ?? 0);
+    const py = Array.isArray(peerPos) ? peerPos[1] : (peerPos?.y ?? 0);
+    const pz = Array.isArray(peerPos) ? peerPos[2] : (peerPos?.z ?? 0);
+
+    const dx = px - lx;
+    const dy = py - ly;
+    const dz = pz - lz;
+    const distance = Math.hypot(dx, dy, dz); // 3D Euclidean distance
 
     let gainValue = 0;
     if (distance <= this.minDistance) {

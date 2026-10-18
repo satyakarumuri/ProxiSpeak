@@ -158,3 +158,140 @@
   white-space: nowrap;
 }
 
+
+/* --- Sarthak's 3D Proximity Voice HUD & Speaking Indicator --- */
+.voice-hud {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 18px;
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  color: #1e293b;
+  z-index: 10;
+  max-width: 320px;
+}
+
+.voice-hud-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.voice-hud-title {
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #0f172a;
+}
+
+.voice-status-tag {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.voice-hud-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.voice-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.voice-btn-mic {
+  background: #2563eb;
+  color: white;
+}
+
+.voice-btn-mic:hover {
+  background: #1d4ed8;
+}
+
+.voice-btn-mic.muted {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.voice-btn-sim {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+}
+
+.voice-btn-sim:hover {
+  background: #e2e8f0;
+}
+
+.voice-btn-sim.active {
+  background: #22c55e;
+  color: white;
+  border-color: #16a34a;
+}
+
+.voice-meter-bar {
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.voice-meter-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #22c55e, #10b981);
+  transition: width 0.08s ease;
+}
+
+.avatar-label-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.speaking-badge {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #22c55e;
+  color: white;
+  animation: pulseSpeakingBadge 0.8s infinite alternate;
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.8);
+}
+
+@keyframes pulseSpeakingBadge {
+  from { transform: scale(0.95); opacity: 0.9; }
+  to { transform: scale(1.08); opacity: 1; }
+}
+
+.avatar-proximity-label {
+  font-size: 9px;
+  color: #94a3b8;
+  background: rgba(15, 23, 42, 0.85);
+  padding: 1px 5px;
+  border-radius: 4px;
+}

@@ -74,3 +74,64 @@ Payload:
 
 These events are planned contracts and must be implemented
 and tested before they are considered complete.
+
+## 9. WebRTC Voice Signaling & Proximity Audio Contract
+
+Author: Sarthak (Audio Engineering Lead)
+
+### Peer-to-Peer Voice Signal Relay
+
+Client emits: `voice:signal`
+
+Payload:
+```json
+{
+  "to": "target_socket_id",
+  "signal": {
+    "type": "offer | answer | candidate",
+    "sdp": "...",
+    "candidate": "..."
+  }
+}
+```
+
+Server forwards to target peer: `voice:signal`
+
+Payload:
+```json
+{
+  "from": "sender_socket_id",
+  "signal": { ... }
+}
+```
+
+### Voice Status (Speaking & Mute State)
+
+Client emits: `voice:status`
+
+Payload:
+```json
+{
+  "muted": false,
+  "speaking": true
+}
+```
+
+Server broadcasts to room: `voice:status`
+
+Payload:
+```json
+{
+  "userId": "sender_socket_id",
+  "muted": false,
+  "speaking": true
+}
+```
+
+### Spatial Proximity Calculation Rules
+
+- 3D Euclidean distance formula: $\text{distance} = \sqrt{(x_2 - x_1)^2 + (y_2 - y_1)^2 + (z_2 - z_1)^2}$
+- Min Hearing Distance: 2 units (100% volume / Gain = 1.0)
+- Max Cutoff Distance: 9 units (0% volume / Gain = 0.0)
+- Stereo Panning: relative horizontal offset $\Delta x = x_2 - x_1$ maps to Left (-1.0) / Right (+1.0) ear.
+

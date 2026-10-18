@@ -166,6 +166,32 @@ io.on("connection", (socket) => {
     });
   });
 
+  // WebRTC Voice Signaling Relay (Sarthak's Audio Module)
+  socket.on("voice:signal", (payload) => {
+    const targetPeerId = payload?.to;
+    const signalData = payload?.signal;
+
+    if (!targetPeerId || !signalData) return;
+
+    // Forward the signal to the specific target peer
+    io.to(targetPeerId).emit("voice:signal", {
+      from: socket.id,
+      signal: signalData
+    });
+  });
+
+  // Voice Speaking & Mute Status Broadcast
+  socket.on("voice:status", (payload) => {
+    const roomId = socket.data.roomId;
+    if (!roomId) return;
+
+    socket.to(roomId).emit("voice:status", {
+      userId: socket.id,
+      muted: !!payload?.muted,
+      speaking: !!payload?.speaking
+    });
+  });
+
   socket.on("office:leave", () => leaveOffice(socket));
 
   socket.on("disconnect", () => {
