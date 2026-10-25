@@ -73,8 +73,3 @@ ProxiSpeak brings the virtual-office concept into a browser-based application by
 [ProxiSpeak — GitHub Repository](https://github.com/satyakarumuri/ProxiSpeak)
 
 ---
-
-**Project Name:** ProxiSpeak  
-**Project Type:** Web-Based Collaboration Platform  
-**Purpose:** To explore a shared virtual office experience for remote teamwork.
-=======
