@@ -1,42 +1,50 @@
+# ProxiSpeak — Team Member Assignments
 
-# Team Member Assignments — ProxiSpeak
-
-## Assignment: Satyasri (Team Lead)
+## 1. Satyasri — Team Lead
 
 **Role:** Integration and coordination
 
-### Responsibilities
-- Use the project snapshot as a baseline for integration; compare teammates' branches before copying files.
-- Review pull requests, resolve conflicts carefully, and run clean-install and end-to-end tests before merging into `main`.
-- Keep secrets in local environment files only; never commit real tokens or credentials.
+- Coordinate team contributions and review branch changes.
+- Resolve merge conflicts and verify integration.
+- Run installation and end-to-end tests before merging into `main`.
+- Ensure secrets and credentials are never committed.
 
-## Assignment: Raktima
+## 2. Raktima — Frontend Functionality
 
-**Role:** Frontend functionality
+**Role:** Frontend development
 
-### Responsibilities
-- Own and improve frontend interaction flows in `frontend/src/App.jsx`.
-- Coordinate changes to `frontend/src/styles.css` with Sarthak before editing shared styles.
-- Check `frontend/package.json` scripts and run the frontend locally; document results and do not claim untested features pass.
+- Develop frontend interaction flows in `frontend/src/App.jsx`.
+- Coordinate shared styling changes with Sarthak.
+- Run the frontend locally and document test results.
+
+## 3. Somasekhar — Backend and Real-Time Communication
+
+**Role:** Backend development
+
+- Develop backend routes and server-side functionality.
+- Maintain and coordinate Socket.IO event contracts.
+- Document backend configuration and verify server behavior.
+
+## 4. Sarthak — UI Design and Styling
+
+**Role:** User interface design
+
+- Improve the visual layout and styling of the application.
+- Coordinate shared CSS changes with Raktima.
+- Check responsive behavior and visual consistency.
+
+## 5. Harika — Testing and Documentation
+
+**Role:** Quality assurance and documentation
+
+- Prepare test cases for the implemented features.
+- Record test results and reproducible issues.
+- Maintain setup instructions and project documentation.
 
 ## Collaboration Rules
-- Work on your assigned branch, commit focused changes, and open a pull request for integration.
-- Pull the latest changes from the agreed integration branch before starting work.
-- Do not overwrite shared files without reviewing diffs.
-- Keep edits limited to assigned responsibilities and coordinate shared-file changes with the relevant team members.
-- Keep documentation accurate and record any unresolved issues.
 
-# Assignment: Sarthak
-
-**Role:** UI design and styling
-
-## Responsibilities
-- Own visual design and styling in frontend/src/styles.css.
-- Coordinate App.jsx changes with Raktima; avoid overwriting functional logic.
-- Check desktop and mobile layouts and report screenshots/results from the running app.
-
-## Collaboration rules
-- Work on your assigned branch, commit focused changes, and open a Pull Request into `main`.
-- Pull the latest `main` before starting. Do not overwrite shared files without reviewing diffs.
-- This ZIP includes the available full source snapshot for context. Keep edits limited to your assigned responsibility and coordinate shared-file changes.
-
+- Work on assigned branches and use focused commits.
+- Review changes before merging into `satya-lead`.
+- Coordinate edits to shared files.
+- Document untested features and known issues honestly.
+- Merge into `main` only after integration and testing.
