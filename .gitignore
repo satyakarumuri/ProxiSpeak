@@ -7,3 +7,7 @@ build/
 coverage/
 .DS_Store
 *.log
+data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal

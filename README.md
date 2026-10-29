@@ -1,119 +1,79 @@
 # ProxiSpeak — Geospatial Proximity Audio Ecosystem
 
-## Project Overview
+A browser-based virtual office with shared office chat, presence, draggable/click-to-move avatars, direct messages, direct audio/video calls, and proximity-based WebRTC audio.
 
-ProxiSpeak is a browser-based virtual office where users can move around a shared 3D workspace and communicate with nearby teammates through proximity-based voice chat.
+## Requirements
+- Node.js 18+ (20+ recommended)
+- npm
+- A modern browser with microphone permissions
 
-## Technology Stack
+## Run locally
 
-- **Frontend:** React, Vite, Three.js
-- **Backend:** Node.js, Express
-- **Database:** MongoDB Atlas, Mongoose
-- **Real-time communication:** Socket.IO
-- **Voice communication:** WebRTC, Web Audio API
-
-## Project Structure
-
-```text
-ProxiSpeak/
-├── backend/
-│   ├── src/
-│   │   ├── models/
-│   │   ├── routes/
-│   │   ├── middleware/
-│   │   ├── socket/
-│   │   └── server.js
-│   ├── package.json
-│   └── .env.example
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── services/
-│   │   ├── hooks/
-│   │   └── utils/
-│   └── package.json
-├── docs/
-│   └── API_CONTRACT.md
-└── README.md
-```
-
-## Prerequisites
-
-Install Node.js and npm, Git, and a code editor such as Visual Studio Code. A MongoDB Atlas account is required for the current database setup.
-
-## Setup Instructions
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/satyakarumuri/ProxiSpeak.git
-cd ProxiSpeak
-git checkout satya-lead
-```
-
-### 2. Install backend dependencies
-
+Terminal 1 — backend:
 ```bash
 cd backend
 npm install
-```
-
-### 3. Configure environment variables
-
-Create `backend/.env` using your own local credentials:
-
-```env
-PORT=3000
-FRONTEND_URL=http://localhost:5173
-MONGODB_URI=your_mongodb_connection_string
-JWT_SECRET=your_random_secret
-```
-
-Never commit `.env` or share real credentials.
-
-### 4. Start the backend
-
-```bash
+cp .env.example .env
 npm run dev
 ```
 
-The backend should run at `http://localhost:3000`.
-
-Health check: `http://localhost:3000/api/health`
-
-### 5. Install and start the frontend
-
-Open a second terminal:
-
+Terminal 2 — frontend:
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-Open the local URL displayed by Vite, normally `http://localhost:5173`.
+Open the Vite URL shown in the terminal (normally `http://localhost:5173`). Open a second browser profile or another device to test multiple users. Both users must enable Proximity Voice and grant microphone permission. Headphones are recommended.
 
-## Current Progress
+## Environment
+Backend `backend/.env`:
+```env
+PORT=3000
+FRONTEND_URL=http://localhost:5173
+JWT_SECRET=replace-with-a-long-random-secret
+```
+Frontend can use `frontend/.env` with `VITE_API_URL=http://localhost:3000` if the backend is hosted elsewhere.
 
-- [x] React frontend foundation
-- [x] Express backend foundation
-- [x] MongoDB Atlas connection
-- [x] User registration and login APIs
-- [x] Login and registration interface
-- [ ] 3D virtual office
-- [ ] Avatar movement and real-time synchronization
-- [ ] Proximity-based voice communication
-- [ ] Integration testing and final demonstration
+## Current implementation notes
+- Accounts and chat history are persisted in a local SQLite database at `backend/data/proxispeak.sqlite` by default.
+- MongoDB is **not** the active persistence engine in this build. Do not describe MongoDB as implemented until a MongoDB URI is configured and account/message persistence is migrated and tested.
+- The Help page includes a local FAQ assistant for common app questions. It does not call a generative AI model or external AI API.
+- Proximity audio uses WebRTC peer-to-peer connections and a STUN server. Some networks require a TURN server; add credentials through environment configuration before production deployment.
+- Use HTTPS in deployed environments for microphone/camera access. Configure a production JWT secret, strict CORS origins, authentication/authorization for signaling, rate limits, and appropriate data retention before public deployment.
+- Room signaling is scoped to the socket's office room. The current UI uses the default `office-general` room; a full multi-room selector is not included.
 
-## Team Workflow
+## Testing checklist
+1. Open two browser profiles and sign in as different guest names.
+2. Confirm each appears in People and on the office map.
+3. Enable Proximity Voice on both; test with headphones.
+4. Move avatars within/outside the hearing radius and check fade behavior.
+5. Toggle mic off/on, mute incoming audio, and test direct audio/video calls.
+6. Inspect browser DevTools Console and Network if WebRTC remains in `connecting` or `failed` state.
+7. Test on separate devices/networks before deployment.
 
-- Members develop on their assigned branches.
-- Do not merge into `main` before the end review.
-- Coordinate changes to shared files before integration.
-- Test changes and report completed work before requesting review.
-- Never commit environment files, passwords, tokens or generated dependency folders.
+## Build frontend
+```bash
+cd frontend
+npm install
+npm run build
+```
 
-## API Documentation
+## Update notes (October 2026)
 
-See `docs/API_CONTRACT.md` for authentication endpoints, response formats, team module ownership and integration rules.
+This update adds:
+- Office-only home canvas; chat panels no longer appear on the home page.
+- Chat menu with Office Chat and Personal Chat entry points.
+- Camera and screen-share publishing to online teammates using a separate WebRTC media mesh from proximity voice.
+- Camera/screen previews beside the teammate's office avatar, plus media connection status text.
+- Backend-persisted profile photos (PNG/JPEG/WEBP/GIF, max 1 MB) and profile editing.
+- Profile name updates and live camera/share status broadcast.
+
+### Run locally
+1. Open a terminal in `backend` and run `npm install`, then `npm start`.
+2. Open another terminal in `frontend` and run `npm install`, then `npm run dev`.
+3. Keep `VITE_API_URL=http://localhost:3000` for local use, or set it to your deployed backend URL.
+4. Camera/microphone/screen capture require localhost or HTTPS. Test with two browsers/laptops. Some networks require a TURN server; this build currently configures Google STUN only.
+5. Profile photos are stored in SQLite under `backend/data`. Back up this directory; for hosting, attach persistent storage or migrate profile storage to a persistent managed service.
+
+Note: WebRTC media delivery is network-dependent and should be tested with two real clients before production deployment. Do not use the development JWT fallback in production; set a unique strong `JWT_SECRET` and set `FRONTEND_URL` to the deployed frontend origin.
