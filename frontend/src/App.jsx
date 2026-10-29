@@ -75,6 +75,9 @@ function App() {
   const [connection, setConnection] = useState('Connecting');
   const [livePeople, setLivePeople] = useState([]);
   const [systemNotices, setSystemNotices] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const unreadNotifications = notifications.filter(item => !item.read).length;
   const [status, setStatus] = useState('Online');
   const [displayName, setDisplayName] = useState(() => localStorage.getItem('proxispeak-name') || '');
 
@@ -98,15 +101,54 @@ function App() {
     client.on('connect_error', () => setConnection('Offline'));
     client.io.on('reconnect', () => { setConnection('Connected'); setProximityRefresh(v => v + 1); });
     client.on('chat:history', history => setMessages(history.map(m => ({ name:m.name, time:new Date(m.at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}), text:m.text, tone: toneForName(m.name), self:m.name === savedName, id:m.id }))));
-    client.on('chat:message', m => setMessages(prev => {
-      if (prev.some(x => x.id && x.id === m.id)) return prev;
-      return [...prev, { id:m.id, name:m.name, time:new Date(m.at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}), text:m.text, tone:toneForName(m.name), self:m.name === savedName }].slice(-100);
-    }));
+    client.on('chat:message', m => {
+      setMessages(prev => {
+        if (prev.some(x => x.id && x.id === m.id)) return prev;
+        return [...prev, { id:m.id, name:m.name, time:new Date(m.at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}), text:m.text, tone:toneForName(m.name), self:m.name === savedName }].slice(-100);
+      });
+      // Notify only for messages written by another office member.
+      if (m.name && m.name !== savedName) {
+        const notification = {
+          id: m.id || `office-${m.at || Date.now()}-${m.name}`,
+          kind: 'Office chat',
+          fromName: m.name,
+          text: m.text || 'Sent a message',
+          at: m.at || new Date().toISOString(),
+          read: false
+        };
+        setNotifications(prev => {
+          if (prev.some(item => item.id === notification.id && item.kind === notification.kind)) return prev;
+          return [notification, ...prev].slice(0, 50);
+        });
+      }
+    });
     client.on('people:update', people => { setLivePeople(people); const mine=people.find(p=>p.socketId===client.id); if(mine?.profilePhoto) setProfilePhoto(mine.profilePhoto); });
     client.on('profile:photo:saved', data=>{setProfilePhoto(data.photo||null);notify('Profile photo saved for your teammates.');});
     client.on('profile:error', data=>notify(data.message||'Profile photo upload failed.'));
     client.on('media:signal', async data=>{ try { if(data.type==='status') return; let pc=mediaPeersRef.current.get(data.fromSocketId); if(data.type==='ice'){if(pc&&data.candidate)await pc.addIceCandidate(new RTCIceCandidate(data.candidate));return;} if(data.type==='offer'){if(!pc||pc.signalingState==='closed'){pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});mediaPeersRef.current.set(data.fromSocketId,pc);pc.onicecandidate=e=>{if(e.candidate)client.emit('media:signal',{targetSocketId:data.fromSocketId,type:'ice',candidate:e.candidate});};pc.ontrack=e=>{const stream=e.streams?.[0]||new MediaStream([e.track]);const kind=(data.videoKinds||[]).find(x=>x.id===e.track.id)?.kind||'camera';setRemoteMedia(prev=>({...prev,[data.fromSocketId]:{...(prev[data.fromSocketId]||{}),[kind]:stream,status:'connected'}}));};pc.onconnectionstatechange=()=>setRemoteMedia(prev=>({...prev,[data.fromSocketId]:{...(prev[data.fromSocketId]||{}),status:pc.connectionState}}));} await pc.setRemoteDescription(new RTCSessionDescription(data.description));const answer=await pc.createAnswer();await pc.setLocalDescription(answer);client.emit('media:signal',{targetSocketId:data.fromSocketId,type:'answer',description:pc.localDescription});}else if(data.type==='answer'&&pc?.signalingState==='have-local-offer'){await pc.setRemoteDescription(new RTCSessionDescription(data.description));}}catch(err){console.warn('Media signaling error',err);setRemoteMedia(prev=>({...prev,[data.fromSocketId]:{...(prev[data.fromSocketId]||{}),status:'reconnecting'}}));} });
-    client.on('direct:message', m => setDirectMessages(prev => [...prev, { ...m, time: new Date(m.at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) }].slice(-100)));
+    client.on('direct:message', m => {
+      setDirectMessages(prev => {
+        if (m.id && prev.some(item => item.id === m.id)) return prev;
+        return [...prev, { ...m, time: new Date(m.at || Date.now()).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) }].slice(-100);
+      });
+      // The server delivers this event to the recipient; ignore any own message echo.
+      if (m.fromSocketId && m.fromSocketId !== client.id) {
+        const notification = {
+          id: m.id || `direct-${m.at || Date.now()}-${m.fromSocketId}`,
+          kind: 'Direct message',
+          fromSocketId: m.fromSocketId,
+          conversationKey: m.conversationKey,
+          fromName: m.fromName || m.name || 'Teammate',
+          text: m.text || 'Sent you a message',
+          at: m.at || new Date().toISOString(),
+          read: false
+        };
+        setNotifications(prev => {
+          if (prev.some(item => item.id === notification.id && item.kind === notification.kind)) return prev;
+          return [notification, ...prev].slice(0, 50);
+        });
+      }
+    });
     client.on('call:incoming', call => { setIncomingCall(call); });
     client.on('call:response', async result => {
       if (!result?.accepted) { setCallStatus('Call declined'); notify('Call declined.'); return; }
@@ -441,6 +483,30 @@ function App() {
     setDraft('');
   };
 
+  const openNotification = (item) => {
+    setNotifications(prev => prev.map(n => n.kind === item.kind && n.id === item.id ? { ...n, read: true } : n));
+    setNotificationsOpen(false);
+    if (item.kind === 'Office chat' || item.kind === 'Group chat') {
+      setChatMode('Office Chat');
+      setChatMenuOpen(false);
+      setActiveNav('Chat');
+      return;
+    }
+
+    // Direct-message notifications should open the sender's conversation.
+    const senderSocketId = item.fromSocketId || item.senderSocketId;
+    const sender = livePeople.find(person => person.socketId === senderSocketId || person.name === item.fromName);
+    if (sender) {
+      setSelectedPerson(sender);
+      return;
+    }
+
+    setChatMode('Personal Chat');
+    setChatMenuOpen(false);
+    setActiveNav('Personal Chat');
+    notify(`${item.fromName || 'This teammate'} is no longer online. Open Personal Chat to continue when they return.`);
+  };
+
   const navItems = [
     { name: 'Office', icon: Home },
     { name: 'Chat', icon: MessageSquare },
@@ -467,13 +533,26 @@ function App() {
   </div></div>;
 
   return <div className="app-shell">
+    <style>{`
+      /* ProxiSpeak light blue workspace theme */
+      .app-shell .topbar { background: #eef5fb !important; color: #243b53 !important; border-bottom: 1px solid #d7e5f2 !important; }
+      .app-shell .sidebar { background: #eaf2fa !important; color: #304b66 !important; border-right: 1px solid #d7e5f2 !important; }
+      .app-shell .sidebar .nav-item { color: #47627c !important; }
+      .app-shell .sidebar .nav-item:hover, .app-shell .sidebar .nav-item.active { background: #d8e9f8 !important; color: #183b5b !important; }
+      .app-shell .sidebar .sidebar-bottom { color: #56718a !important; border-top-color: #d7e5f2 !important; }
+      .app-shell .topbar .product-title, .app-shell .topbar .brand { color: #243b53 !important; }
+      .app-shell .topbar .icon-button { color: #365875 !important; }
+      .app-shell .topbar .icon-button:hover { background: #dcebf8 !important; }
+      .app-shell .topbar .logout-button { background: #d8e9f8 !important; color: #234765 !important; border-color: #c6dced !important; }
+      .app-shell .notification-panel button[type="button"]:hover { background: #e0effb !important; }
+    `}</style>
     <header className="topbar">
       <div className="brand"><span className="brand-mark"><Activity size={22} strokeWidth={3}/></span><span>Proxi<span>Speak</span></span></div>
       <div className="product-title"><strong>Virtual Office</strong><span>Move · Chat · Talk · Collaborate</span></div>
       <div className="top-actions">
-        <button className="online-pill" onClick={() => { const next = status === 'Online' ? 'Away' : 'Online'; setStatus(next); socket?.emit('presence:status', next); }}><i className={status === 'Online' ? 'status-dot' : 'status-dot away'}/>{connection === 'Connected' ? `Online: ${livePeople.length}` : connection}</button>
+        <button className="online-pill" style={{ color: '#17324D' }} onClick={() => { const next = status === 'Online' ? 'Away' : 'Online'; setStatus(next); socket?.emit('presence:status', next); }}><i className={status === 'Online' ? 'status-dot' : 'status-dot away'}/>{connection === 'Connected' ? `Online: ${livePeople.length}` : connection}</button>
         <button className="icon-button" title="Participants" onClick={() => setActiveNav('People')}><Users/></button>
-        <button className="icon-button" title="Notifications" onClick={() => notify('You’re all caught up.')}><Bell/></button>
+        <button className="icon-button notification-bell" style={{ position: 'relative' }} title="Notifications" aria-label={`Notifications${unreadNotifications ? `, ${unreadNotifications} unread` : ''}`} onClick={() => { setNotificationsOpen(v => !v); setNotifications(prev => prev.map(item => ({ ...item, read: true }))); }}><Bell/>{unreadNotifications > 0 && <span className="notification-badge" style={{ position: 'absolute', top: -5, right: -5, minWidth: 18, height: 18, padding: '0 4px', borderRadius: 999, background: '#e5484d', color: '#fff', fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{unreadNotifications > 99 ? '99+' : unreadNotifications}</span>}</button>
         <button className="icon-button" title="Settings" onClick={() => setActiveNav('Settings')}><Settings/></button>
         <button className="logout-button" onClick={logout}>Log out</button>
       </div>
@@ -488,8 +567,23 @@ function App() {
     <main className="main-area">
       <div className="workspace-toolbar">
         <div className="search-box"><Search size={18}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search people, rooms or spaces..."/></div>
-        <div className="toolbar-right"><span className="date-label"><CalendarDays size={17}/> Virtual Office</span><button className="icon-button light" onClick={() => notify('No new notifications')}><Bell size={19}/></button><button className="profile profile-button" onClick={() => setProfileOpen(true)}><Avatar tone="violet" name={displayName} photo={profilePhoto}/><div><b>{displayName}</b><small><i className="status-dot"/> {account ? 'Signed in' : 'Guest'} · {status}</small></div><ChevronDown size={16}/></button></div>
+        <div className="toolbar-right"><span className="date-label"><CalendarDays size={17}/> Virtual Office</span><button className="icon-button light notification-bell" style={{ position: 'relative' }} title="Notifications" aria-label={`Notifications${unreadNotifications ? `, ${unreadNotifications} unread` : ''}`} onClick={() => { setNotificationsOpen(v => !v); setNotifications(prev => prev.map(item => ({ ...item, read: true }))); }}><Bell size={19}/>{unreadNotifications > 0 && <span className="notification-badge" style={{ position: 'absolute', top: -5, right: -5, minWidth: 18, height: 18, padding: '0 4px', borderRadius: 999, background: '#e5484d', color: '#fff', fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{unreadNotifications > 99 ? '99+' : unreadNotifications}</span>}</button><button className="profile profile-button" onClick={() => setProfileOpen(true)}><Avatar tone="violet" name={displayName} photo={profilePhoto}/><div><b>{displayName}</b><small><i className="status-dot"/> {account ? 'Signed in' : 'Guest'} · {status}</small></div><ChevronDown size={16}/></button></div>
       </div>
+
+      {notificationsOpen && <section className="notification-panel" role="dialog" aria-label="Notifications" style={{ position: 'fixed', top: 76, right: 24, zIndex: 3000, width: 'min(360px, calc(100vw - 32px))', maxHeight: 'min(440px, calc(100vh - 100px))', overflowY: 'auto', padding: 16, border: '1px solid #dce3ec', borderRadius: 14, background: '#ffffff', color: '#172033', boxShadow: '0 12px 36px rgba(15, 23, 42, 0.18)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
+          <strong>Notifications</strong>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {notifications.length > 0 && <button type="button" className="plain-icon" onClick={() => setNotifications([])} title="Clear all notifications">Clear</button>}
+            <button type="button" className="plain-icon" onClick={() => setNotificationsOpen(false)} aria-label="Close notifications"><X size={17}/></button>
+          </div>
+        </div>
+        {notifications.length === 0 ? <p style={{ margin: '12px 0', color: '#64748b' }}>You're all caught up.</p> : notifications.map(item => <button type="button" key={`${item.kind}-${item.id}`} onClick={() => openNotification(item)} style={{ display: 'block', width: '100%', textAlign: 'left', cursor: 'pointer', padding: '12px 10px', border: 0, borderTop: '1px solid #e8edf3', borderRadius: 8, background: item.read ? '#ffffff' : '#eef6ff', color: '#172033', opacity: item.read ? 0.82 : 1, marginTop: 2 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline' }}><strong style={{ fontSize: 14 }}>{item.fromName}</strong><small style={{ color: '#64748b', whiteSpace: 'nowrap' }}>{item.kind}</small></div>
+          <p style={{ margin: '5px 0', overflowWrap: 'anywhere' }}>{item.text}</p>
+          <small style={{ color: '#64748b' }}>{new Date(item.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · Click to open</small>
+        </button>)}
+      </section>}
 
       {chatMenuOpen && <div className="chat-menu"><button onClick={()=>{setChatMode('Office Chat');setActiveNav('Chat');setChatMenuOpen(false);}}>Office Chat</button><button onClick={()=>{setChatMode('Personal Chat');setActiveNav('Personal Chat');setChatMenuOpen(false);}}>Personal Chat</button></div>}
       {activeNav !== 'Office' && <section className="nav-page panel">
