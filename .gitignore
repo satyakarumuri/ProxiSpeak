@@ -27,3 +27,10 @@ npm-debug.log*
 *.db
 *-shm
 *-wal
+
+*.log
+data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
